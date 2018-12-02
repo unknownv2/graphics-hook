@@ -8,4 +8,4 @@ Based on [Justin Stenning's Direct3DHook](https://github.com/spazzarama/Direct3D
 
 ## References
 
-[Screen Capture and Overlays for Direct3D 9, 10 and 11 using API Hooks](spazzarama.com/2011/03/14/c-screen-capture-and-overlays-for-direct3d-9-10-and-11-using-api-hooks/)
+[Screen Capture and Overlays for Direct3D 9, 10 and 11 using API Hooks](https://spazzarama.com/2011/03/14/c-screen-capture-and-overlays-for-direct3d-9-10-and-11-using-api-hooks/)
