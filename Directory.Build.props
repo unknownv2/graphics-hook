@@ -1,0 +1,13 @@
+<Project>
+
+  <PropertyGroup Condition="'$(Configuration)' != ''">
+    <ConfigurationGroup Condition="$(Configuration.EndsWith('Debug'))">Debug</ConfigurationGroup>
+    <ConfigurationGroup Condition="$(Configuration.EndsWith('Release'))">Release</ConfigurationGroup>
+    <ProjectDir>$(MSBuildThisFileDirectory)</ProjectDir>
+    <SourceDir>$(ProjectDir)src\</SourceDir>
+    <CommonPath>$(SourceDir)Common\src</CommonPath>
+    <BinDir Condition="'$(BinDir)'==''">$(ProjectDir)bin/</BinDir>
+    <OutputDir>$(BinDir)$(Configuration)/$(Platform)/</OutputDir>
+  </PropertyGroup>
+
+</Project>
