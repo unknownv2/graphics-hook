@@ -47,9 +47,9 @@ namespace DirectX.Direct3D9.Overlay
             {
                 using (var device = new Device(direct3D, 0, DeviceType.NullReference, IntPtr.Zero, 
                     CreateFlags.HardwareVertexProcessing,
-                    new PresentParameters() { BackBufferWidth = 1, BackBufferHeight = 1, DeviceWindowHandle = IntPtr.Zero }))
+                    new PresentParameters { BackBufferWidth = 1, BackBufferHeight = 1, DeviceWindowHandle = IntPtr.Zero }))
                 {
-                    _d3DDeviceFunctions.AddRange(ReadVTableAddress(device.NativePointer, D3DDevice9FunctionCount));
+                    _d3DDeviceFunctions.AddRange(ReadVTableAddresses(device.NativePointer, D3DDevice9FunctionCount));
                 }
             }
 
@@ -67,7 +67,7 @@ namespace DirectX.Direct3D9.Overlay
             _d3DPresentHook.ThreadACL.SetExclusiveACL(new int[1]);
         }
 
-        private static IEnumerable<IntPtr> ReadVTableAddress(IntPtr vTableAddress, int vTableFunctionCount)
+        private static IEnumerable<IntPtr> ReadVTableAddresses(IntPtr vTableAddress, int vTableFunctionCount)
         {
             IntPtr[] addresses = new IntPtr[vTableFunctionCount];
             IntPtr vTable = Marshal.ReadIntPtr(vTableAddress);
@@ -79,10 +79,10 @@ namespace DirectX.Direct3D9.Overlay
         }
 
         private unsafe int Detour_Present(
-            IntPtr device, 
+            IntPtr device,
             Rectangle* sourceRectangle,
-            Rectangle* destRectangle, 
-            IntPtr destWindowOverride, 
+            Rectangle* destRectangle,
+            IntPtr destWindowOverride,
             IntPtr dirtyRegion)
         {
             _frameCount++;
@@ -92,10 +92,12 @@ namespace DirectX.Direct3D9.Overlay
 
         private int Detour_EndScene(IntPtr direct3DDevice)
         {
-            Device dev = (Device)direct3DDevice;
-            DrawFramesPerSecond(dev);
+            Device device = (Device)direct3DDevice;
 
-            dev.EndScene();
+            DrawFramesPerSecond(device);
+
+            device.EndScene();
+
             return Result.Ok.Code;
         }
 
@@ -112,7 +114,7 @@ namespace DirectX.Direct3D9.Overlay
                 }
                 if (_framesPerSecondFont == null)
                 {
-                    _framesPerSecondFont = new Font(device, new FontDescription()
+                    _framesPerSecondFont = new Font(device, new FontDescription
                     {
                         Height = 20,
                         FaceName = "Arial",
@@ -129,7 +131,7 @@ namespace DirectX.Direct3D9.Overlay
 
                 _framesPerSecondFont.DrawText(null, $"{_lastFrameRate:N0} FPS", 0, 0, new ColorBGRA(244, 66, 86, 255));
             }
-            catch (Exception e)
+            catch (Exception)
             {
             }
         }
