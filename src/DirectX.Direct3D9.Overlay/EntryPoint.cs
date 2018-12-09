@@ -18,14 +18,10 @@ namespace DirectX.Direct3D9.Overlay
         private int _lastTickCount;
         private float _lastFrameRate;
 
-        private string _overlayText;
+        public EntryPoint(IContext context) { }
 
-        public EntryPoint(IContext context, string arg1) { }
-
-        public void Run(IContext context, string overlayText)
+        public void Run(IContext context)
         {
-            _overlayText = overlayText;
-
             InitializeDeviceHook();
             while (true)
             {
@@ -49,13 +45,16 @@ namespace DirectX.Direct3D9.Overlay
 
             using (var direct3D = new Direct3D())
             {
-                using (var device = new Device(direct3D, 0, DeviceType.NullReference, IntPtr.Zero, CreateFlags.HardwareVertexProcessing, new PresentParameters() { BackBufferWidth = 1, BackBufferHeight = 1, DeviceWindowHandle = IntPtr.Zero }))
+                using (var device = new Device(direct3D, 0, DeviceType.NullReference, IntPtr.Zero, 
+                    CreateFlags.HardwareVertexProcessing,
+                    new PresentParameters() { BackBufferWidth = 1, BackBufferHeight = 1, DeviceWindowHandle = IntPtr.Zero }))
                 {
                     _d3DDeviceFunctions.AddRange(ReadVTableAddress(device.NativePointer, D3DDevice9FunctionCount));
                 }
             }
 
-            _d3DEndSceneHook = HookFactory.CreateHook<IDirect3DDevice9_EndSceneDelegate>(_d3DDeviceFunctions[(int)FunctionOrdinals.EndScene],
+            _d3DEndSceneHook = HookFactory.CreateHook<IDirect3DDevice9_EndSceneDelegate>(
+                _d3DDeviceFunctions[(int)FunctionOrdinals.EndScene],
                 Detour_EndScene,
                 this);
 
@@ -79,7 +78,12 @@ namespace DirectX.Direct3D9.Overlay
             return addresses;
         }
 
-        private unsafe int Detour_Present(IntPtr device, Rectangle* sourceRectangle, Rectangle* destRectangle, IntPtr destWindowOverride, IntPtr dirtyRegion)
+        private unsafe int Detour_Present(
+            IntPtr device, 
+            Rectangle* sourceRectangle,
+            Rectangle* destRectangle, 
+            IntPtr destWindowOverride, 
+            IntPtr dirtyRegion)
         {
             _frameCount++;
 
