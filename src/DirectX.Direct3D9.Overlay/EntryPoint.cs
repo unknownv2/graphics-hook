@@ -47,7 +47,7 @@ namespace DirectX.Direct3D9.Overlay
         {
             _d3DDeviceFunctions = new List<IntPtr>();
 
-            using (var direct3D = new Direct3D())
+            using (var direct3D = new SharpDX.Direct3D9.Direct3D())
             {
                 using (var device = new Device(direct3D, 0, DeviceType.NullReference, IntPtr.Zero, 
                     CreateFlags.HardwareVertexProcessing,

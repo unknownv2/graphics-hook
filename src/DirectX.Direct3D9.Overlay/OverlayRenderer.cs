@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.Generic;
 using DirectX.Direct3D.Core.Drawing;
 using DirectX.Direct3D.Core.Memory;
 using SharpDX;
