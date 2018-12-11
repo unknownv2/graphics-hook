@@ -10,10 +10,7 @@ namespace DirectX.Direct3D.Core.Drawing
 
         public bool Hidden { get; set; }
 
-        public object Clone()
-        {
-            return MemberwiseClone();
-        }
+        public object Clone() => MemberwiseClone();
 
         public void OnFrame()
         {
