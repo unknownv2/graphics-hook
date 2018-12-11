@@ -42,6 +42,10 @@ namespace DirectX.Direct3D9.Overlay
                 _device = device;
 
                 _sprite = ToDispose(new Sprite(device));
+
+                InitializeResources();
+
+                _isInitialized = true;
             }
             finally
             {
@@ -92,12 +96,12 @@ namespace DirectX.Direct3D9.Overlay
 
         private void BeginFrame()
         {
-
+            _sprite.Begin(SpriteFlags.AlphaBlend);
         }
 
         private void EndFrame()
         {
-
+            _sprite.End();
         }
 
         private Font GetOverlayFont(TextOverlay textOverlay)
@@ -118,6 +122,25 @@ namespace DirectX.Direct3D9.Overlay
                 _fontCache[fontKey] = overlayFont;
             }
             return overlayFont;
+        }
+
+        public void ResetDeviceResources()
+        {
+            try
+            {
+                foreach (var font in _fontCache)
+                {
+                    font.Value.OnLostDevice();
+                }
+
+                _sprite?.OnLostDevice();
+            }
+            catch { }
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            _device = null;
         }
     }
 }
