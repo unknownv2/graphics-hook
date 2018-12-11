@@ -68,6 +68,10 @@ namespace DirectX.Direct3D9.Overlay
 
         public void DrawFrame()
         {
+            EnsureInitialized();
+
+            BeginFrame();
+
             foreach (var overlay in Overlays)
             {
                 foreach (var overlayElement in overlay.Elements)
@@ -84,6 +88,18 @@ namespace DirectX.Direct3D9.Overlay
                     }
                 }
             }
+
+            EndFrame();
+        }
+
+        private void BeginFrame()
+        {
+
+        }
+
+        private void EndFrame()
+        {
+
         }
 
         private Font GetOverlayFont(TextOverlay textOverlay)
