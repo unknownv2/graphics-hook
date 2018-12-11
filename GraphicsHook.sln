@@ -11,9 +11,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{2FDEAA0B-9
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Direct3DCapture.Tests", "test\Direct3DCapture.Tests\Direct3DCapture.Tests.csproj", "{39FCDDD4-78AF-4F6F-BA40-724A5D1AE620}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DirectX.Direct3D9.Overlay", "src\DirectX.Direct3D9.Overlay\DirectX.Direct3D9.Overlay.csproj", "{A86B01F8-1FEA-485B-85D7-3941694EC0A4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DirectX.Direct3D9.Overlay", "src\DirectX.Direct3D9.Overlay\DirectX.Direct3D9.Overlay.csproj", "{A86B01F8-1FEA-485B-85D7-3941694EC0A4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DirectX.Direct3D11.Overlay", "src\DirectX.Direct3D11.Overlay\DirectX.Direct3D11.Overlay.csproj", "{96BC579E-FAFD-4152-8AFC-81905D7BF210}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DirectX.Direct3D11.Overlay", "src\DirectX.Direct3D11.Overlay\DirectX.Direct3D11.Overlay.csproj", "{96BC579E-FAFD-4152-8AFC-81905D7BF210}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DirectX.Direct3D.Core", "src\DirectX.Direct3D.Core\DirectX.Direct3D.Core.csproj", "{224F9343-46F6-4654-9381-E35239D179F1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -37,6 +39,10 @@ Global
 		{96BC579E-FAFD-4152-8AFC-81905D7BF210}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{96BC579E-FAFD-4152-8AFC-81905D7BF210}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{96BC579E-FAFD-4152-8AFC-81905D7BF210}.Release|Any CPU.Build.0 = Release|Any CPU
+		{224F9343-46F6-4654-9381-E35239D179F1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{224F9343-46F6-4654-9381-E35239D179F1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{224F9343-46F6-4654-9381-E35239D179F1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{224F9343-46F6-4654-9381-E35239D179F1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -46,6 +52,7 @@ Global
 		{39FCDDD4-78AF-4F6F-BA40-724A5D1AE620} = {2FDEAA0B-9F04-4CB1-89CF-EF668584453A}
 		{A86B01F8-1FEA-485B-85D7-3941694EC0A4} = {E9D61240-9E2C-4BD5-BEF1-607D3422EAAF}
 		{96BC579E-FAFD-4152-8AFC-81905D7BF210} = {E9D61240-9E2C-4BD5-BEF1-607D3422EAAF}
+		{224F9343-46F6-4654-9381-E35239D179F1} = {E9D61240-9E2C-4BD5-BEF1-607D3422EAAF}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {15C4F934-433D-4655-9D2C-5E30E7A936C3}
