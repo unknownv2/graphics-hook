@@ -36,8 +36,12 @@ namespace DirectX.Direct3D9.Overlay
         [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Unicode, SetLastError = true)]
         private delegate int IDirect3DDevice9_EndSceneDelegate(IntPtr device);
 
+        [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Unicode, SetLastError = true)]
+        private delegate int IDirect3DDevice9_ResetDelegate(IntPtr device, ref PresentParameters parameters);
+
         private IHook<IDirect3DDevice9_PresentDelegate> _d3DPresentHook;
         private IHook<IDirect3DDevice9_EndSceneDelegate> _d3DEndSceneHook;
+        private IHook<IDirect3DDevice9_ResetDelegate> _d3dResetHook;
 
         public unsafe void InitializeDeviceHook()
         {
@@ -53,6 +57,7 @@ namespace DirectX.Direct3D9.Overlay
                 }
             }
 
+            // Create the hooks for our target Direct3D Device functions.
             _d3DEndSceneHook = HookFactory.CreateHook<IDirect3DDevice9_EndSceneDelegate>(
                 _d3DDeviceFunctions[(int)FunctionOrdinals.EndScene],
                 Detour_EndScene,
@@ -63,8 +68,15 @@ namespace DirectX.Direct3D9.Overlay
                 Detour_Present,
                 this);
 
+            _d3dResetHook = HookFactory.CreateHook<IDirect3DDevice9_ResetDelegate>(
+                _d3DDeviceFunctions[(int)FunctionOrdinals.Present],
+                Detour_Reset,
+                this);
+
+            // Enable the hooks for all threads except the current thread.
             _d3DEndSceneHook.ThreadACL.SetExclusiveACL(new int[1]);
             _d3DPresentHook.ThreadACL.SetExclusiveACL(new int[1]);
+            _d3dResetHook.ThreadACL.SetExclusiveACL(new int[1]);
         }
 
         private static IEnumerable<IntPtr> ReadVTableAddresses(IntPtr vTableAddress, int vTableFunctionCount)
@@ -99,6 +111,11 @@ namespace DirectX.Direct3D9.Overlay
             device.EndScene();
 
             return Result.Ok.Code;
+        }
+
+        private int Detour_Reset(IntPtr direct3DDevice, ref PresentParameters parameters)
+        {
+            return _d3dResetHook.Original(direct3DDevice, ref parameters);
         }
 
         private void DrawFramesPerSecond(Device device)
