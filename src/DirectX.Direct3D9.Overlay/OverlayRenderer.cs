@@ -109,7 +109,7 @@ namespace DirectX.Direct3D9.Overlay
             string fontKey =
                 $"{textOverlay.Font.Name}{textOverlay.Font.Size}{textOverlay.Font.Style}{textOverlay.AntiAliased}";
 
-            if (_fontCache.TryGetValue(fontKey, out Font overlayFont))
+            if (!_fontCache.TryGetValue(fontKey, out Font overlayFont))
             {
                 overlayFont = ToDispose(new Font(_device, new FontDescription()
                 {
