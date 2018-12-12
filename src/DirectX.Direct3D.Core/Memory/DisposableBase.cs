@@ -17,10 +17,8 @@ namespace DirectX.Direct3D.Core.Memory
         {
             if (!IsDisposed)
             {
-
                 IsDisposed = true;
             }
-
         }
 
         protected abstract void Dispose(bool disposing);

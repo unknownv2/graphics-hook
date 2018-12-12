@@ -8,7 +8,7 @@ namespace DirectX.Direct3D.Core.Drawing
 
         public object Clone() => MemberwiseClone();
 
-        public void OnFrame()
+        public virtual void OnFrame()
         {
         }
 

@@ -28,5 +28,13 @@ namespace DirectX.Direct3D.Core.Memory
 
             return default(T);
         }
+
+        protected internal void RemoveAndDispose<T>(ref T disposable)
+        {
+            if (!ReferenceEquals(disposable, null))
+            {
+                DisposeCollector?.RemoveAndDispose(ref disposable);
+            }
+        }
     }
 }

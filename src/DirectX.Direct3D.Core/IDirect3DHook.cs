@@ -4,7 +4,8 @@ using System.Text;
 
 namespace DirectX.Direct3D.Core
 {
-    internal interface IDirect3DHook
+    public interface IDirect3DHook : IDisposable
     {
+        void CreateHooks();
     }
 }

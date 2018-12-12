@@ -14,7 +14,7 @@
 
   <ItemGroup>
     <PackageReference Include="SharpDX" Version="4.2.0" />
-    <PackageReference Include="System.Drawing.Common" Version="4.5.1" />
+    <PackageReference Include="System.Drawing.Common" Version="4.6.0-preview.18571.3" />
   </ItemGroup>
 
 </Project>
