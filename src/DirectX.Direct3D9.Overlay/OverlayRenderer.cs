@@ -9,7 +9,7 @@ namespace DirectX.Direct3D9.Overlay
     internal class OverlayRenderer : DisposableComponent
     {
         public List<IOverlay> Overlays { get; set; } = new List<IOverlay>();
-        private Dictionary<string, Font> _fontCache = new Dictionary<string, Font>();
+        private readonly Dictionary<string, Font> _fontCache = new Dictionary<string, Font>();
 
         private Device _device;
         private Sprite _sprite;

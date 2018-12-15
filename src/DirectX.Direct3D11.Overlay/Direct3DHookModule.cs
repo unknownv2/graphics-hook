@@ -1,17 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Drawing;
-using System.Runtime.InteropServices;
+using System.Text;
 using CoreHook;
-using SharpDX;
+using DirectX.Direct3D.Core.Drawing;
+using DirectX.Direct3D.Core;
 using SharpDX.Direct3D;
 using SharpDX.Direct3D11;
 using SharpDX.DXGI;
 using Device = SharpDX.Direct3D11.Device;
-using DirectX.Direct3D.Core;
+using System.Runtime.InteropServices;
+using System.Drawing;
 namespace DirectX.Direct3D11.Overlay
 {
-    public class EntryPoint : IEntryPoint
+    internal class Direct3DHookModule : Direct3DHook
     {
         /// <summary>
         /// The IDXGISwapChain.Present function definition
@@ -23,8 +24,9 @@ namespace DirectX.Direct3D11.Overlay
 
         private IHook<DXGISwapChain_PresentDelegate> _d3DPresentHook;
         private List<IntPtr> _d3DDeviceFunctions = new List<IntPtr>();
+        private OverlayRenderer _overlayRenderer;
 
-        public EntryPoint(IContext context) { }
+
         public const int DXGI_SWAPCHAIN_METHOD_COUNT = 18;
         SharpDX.Direct3D11.Device _device;
         SwapChain _swapChain;
@@ -34,8 +36,7 @@ namespace DirectX.Direct3D11.Overlay
         private int _lastTickCount;
         private float _lastFrameRate;
 
-
-        public static SharpDX.DXGI.SwapChainDescription CreateSwapChainDescription(IntPtr windowHandle)
+        private static SharpDX.DXGI.SwapChainDescription CreateSwapChainDescription(IntPtr windowHandle)
         {
             return new SharpDX.DXGI.SwapChainDescription
             {
@@ -49,13 +50,9 @@ namespace DirectX.Direct3D11.Overlay
                 Usage = SharpDX.DXGI.Usage.RenderTargetOutput
             };
         }
-        private Direct3DHook _direct3DHook;
 
-        public void Run(IContext context)
+        public override void CreateHooks()
         {
-            _direct3DHook = new Direct3DHookModule();
-            _direct3DHook.CreateHooks();
-            /*
             var renderForm = new SharpDX.Windows.RenderForm();
             SharpDX.Direct3D11.Device.CreateWithSwapChain(
                 DriverType.Hardware,
@@ -74,10 +71,26 @@ namespace DirectX.Direct3D11.Overlay
                 Detour_Present,
                 this);
 
-            _d3DPresentHook.Enabled = true;*/
+            Overlays = new List<IOverlay>();
+            //var font = new System.Drawing.Font("Arial", 16, FontStyle.Bold);
+            // Add the Frames Per Second overlay
+            Overlays.Add(new Direct3D.Core.Drawing.Overlay
+            {
+                Elements =
+                {
+                    new FramesPerSecondOverlay(new System.Drawing.Font("Arial", 16, FontStyle.Bold))
+                    {
+                        Location = new System.Drawing.Point(25, 25),
+                        Color = Color.Red,
+                        AntiAliased = true,
+                        Text = "{0:N0} FPS"
+                    }
+                },
+                Hidden = false
+            });
 
+            _d3DPresentHook.Enabled = true;
         }
-
         private static IEnumerable<IntPtr> ReadVTableAddresses(IntPtr vTableAddress, int vTableFunctionCount)
         {
             IntPtr[] addresses = new IntPtr[vTableFunctionCount];
@@ -89,7 +102,6 @@ namespace DirectX.Direct3D11.Overlay
             return addresses;
         }
 
-
         private int Detour_Present(IntPtr swapChainPtr, int syncInterval, SharpDX.DXGI.PresentFlags flags)
         {
             SwapChain swapChain = (SwapChain)swapChainPtr;
@@ -100,53 +112,58 @@ namespace DirectX.Direct3D11.Overlay
             return _d3DPresentHook.Original(swapChainPtr, syncInterval, flags);
         }
 
-
         private void DrawFramesPerSecond(SwapChain swapChain)
         {
+            Capture(swapChain);
+        }
+
+        private void CalculateFps()
+        {
+            _frameCount++;
+            var tickCount = Environment.TickCount;
+            if (Math.Abs(tickCount - _lastTickCount) > 1000)
+            {
+                _lastFrameRate = (float)_frameCount * 1000 / Math.Abs(tickCount - _lastTickCount);
+                _frameCount = 0;
+                _lastTickCount = tickCount;
+            }
+        }
+
+        private void Capture(SwapChain swapChain)
+        {
+            CalculateFps();
             try
             {
-                var tickCount = Environment.TickCount;
-                if (Math.Abs(tickCount - _lastTickCount) > 1000)
+                // Draw overlays
+                var displayOverlays = Overlays;
+                if (_overlayRenderer == null ||
+                    _overlayRenderer.Device.NativePointer != swapChain.NativePointer ||
+                    PendingUpdate)
                 {
-                    _lastFrameRate = (float)_frameCount * 1000 / Math.Abs(tickCount - _lastTickCount);
-                    _frameCount = 0;
-                    _lastTickCount = tickCount;
-                }
-
-                var device = swapChain.GetDevice<Device>();
-                var deviceContext = device.ImmediateContext;
-                var spriteEngine = new DXSprite(device, deviceContext);
-                if (!spriteEngine.Initialize())
-                {
-                    return;
-                }
-                var font = new DXFont(device, deviceContext);
-                font.Initialize("Arial", 20, FontStyle.Bold, true);
-                var color = System.Drawing.Color.FromArgb(244, 66, 86);
-                spriteEngine.DrawString(25, 25, $"{_lastFrameRate:N0} FPS", color, font);
-                /*
-                if (_framesPerSecondFont == null)
-                {
-                    _framesPerSecondFont = new Font(device, new FontDescription
+                    if (_overlayRenderer != null)
                     {
-                        Height = 20,
-                        FaceName = "Arial",
-                        Italic = false,
-                        Width = 0,
-                        MipLevels = 1,
-                        CharacterSet = FontCharacterSet.Default,
-                        OutputPrecision = FontPrecision.Default,
-                        Quality = FontQuality.ClearTypeNatural,
-                        PitchAndFamily = FontPitchAndFamily.Default | FontPitchAndFamily.DontCare,
-                        Weight = FontWeight.Bold
-                    });
+                        RemoveAndDispose(ref _overlayRenderer);
+                    }
+
+                    _overlayRenderer = ToDispose((new OverlayRenderer()));
+                    _overlayRenderer.Overlays.AddRange(displayOverlays);
+                    _overlayRenderer.Initialize(swapChain);
+                    PendingUpdate = false;
                 }
 
-                _framesPerSecondFont.DrawText(null, $"{_lastFrameRate:N0} FPS", 0, 0, new ColorBGRA(244, 66, 86, 255));*/
+                if (_overlayRenderer != null)
+                {
+                    foreach (var overlay in _overlayRenderer.Overlays)
+                    {
+                        overlay.OnFrame();
+                    }
+
+                    _overlayRenderer.DrawFrame();
+                }
             }
             catch (Exception e)
             {
-                System.Diagnostics.Debug.WriteLine(e.ToString());
+
             }
         }
     }

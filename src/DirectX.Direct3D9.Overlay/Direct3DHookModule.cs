@@ -60,7 +60,7 @@ namespace DirectX.Direct3D9.Overlay
                 Detour_EndScene,
                 this);
 
-                _d3DPresentHook = HookFactory.CreateHook<IDirect3DDevice9_PresentDelegate>(
+            _d3DPresentHook = HookFactory.CreateHook<IDirect3DDevice9_PresentDelegate>(
                     _d3DDeviceFunctions[(int) FunctionOrdinals.Present],
                     Detour_Present,
                     this);
