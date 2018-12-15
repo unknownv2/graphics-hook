@@ -24,11 +24,6 @@ namespace DirectX.Direct3D11.Overlay
         public const int DXGI_SWAPCHAIN_METHOD_COUNT = 18;
         Device _device;
         SwapChain _swapChain;
-        private DXFont _framesPerSecondFont;
-
-        private int _frameCount;
-        private int _lastTickCount;
-        private float _lastFrameRate;
 
         private IntPtr _swapChainPtr;
 
@@ -56,7 +51,7 @@ namespace DirectX.Direct3D11.Overlay
                 CreateSwapChainDescription(renderForm.Handle),
                 out _device,
                 out _swapChain);
-            //
+
             if (_swapChain != null)
             {
                 _d3DDeviceFunctions.AddRange(ReadVTableAddresses(_swapChain.NativePointer, DXGI_SWAPCHAIN_METHOD_COUNT));
@@ -69,7 +64,6 @@ namespace DirectX.Direct3D11.Overlay
 
             Overlays = new List<IOverlay>
             {
-                //var font = new System.Drawing.Font("Arial", 16, FontStyle.Bold);
                 // Add the Frames Per Second overlay
                 new Direct3D.Core.Drawing.Overlay
                 {
@@ -115,32 +109,18 @@ namespace DirectX.Direct3D11.Overlay
             Capture(swapChain);
         }
 
-        private void CalculateFps()
-        {
-            _frameCount++;
-            var tickCount = Environment.TickCount;
-            if (Math.Abs(tickCount - _lastTickCount) > 1000)
-            {
-                _lastFrameRate = (float)_frameCount * 1000 / Math.Abs(tickCount - _lastTickCount);
-                _frameCount = 0;
-                _lastTickCount = tickCount;
-            }
-        }
-
         private void Capture(SwapChain swapChain)
         {
-            CalculateFps();
-            
+           
             try
             {
-                // Draw overlays
+                // Draw any overlays
                 var displayOverlays = Overlays;
                 
                 if (_overlayRenderer == null ||
                     _swapChainPtr != swapChain.NativePointer ||
                     PendingUpdate)
                 {
-                    
                     if (_overlayRenderer != null)
                     {
                         _overlayRenderer.Dispose();
