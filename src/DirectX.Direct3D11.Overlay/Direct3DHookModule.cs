@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Runtime.InteropServices;
+using System.Drawing;
 using CoreHook;
 using DirectX.Direct3D.Core.Drawing;
 using DirectX.Direct3D.Core;
@@ -8,19 +9,13 @@ using SharpDX.Direct3D;
 using SharpDX.Direct3D11;
 using SharpDX.DXGI;
 using Device = SharpDX.Direct3D11.Device;
-using System.Runtime.InteropServices;
-using System.Drawing;
+
 namespace DirectX.Direct3D11.Overlay
 {
     internal class Direct3DHookModule : Direct3DHook
     {
-        /// <summary>
-        /// The IDXGISwapChain.Present function definition
-        /// </summary>
-        /// <param name="device"></param>
-        /// <returns></returns>
         [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Unicode, SetLastError = true)]
-        delegate int DXGISwapChain_PresentDelegate(IntPtr swapChain, int syncInterval, SharpDX.DXGI.PresentFlags flags);
+        delegate int DXGISwapChain_PresentDelegate(IntPtr swapChain, int syncInterval, PresentFlags flags);
 
         private IHook<DXGISwapChain_PresentDelegate> _d3DPresentHook;
         private List<IntPtr> _d3DDeviceFunctions = new List<IntPtr>();
@@ -37,25 +32,25 @@ namespace DirectX.Direct3D11.Overlay
 
         private IntPtr _swapChainPtr;
 
-        private static SharpDX.DXGI.SwapChainDescription CreateSwapChainDescription(IntPtr windowHandle)
+        private static SwapChainDescription CreateSwapChainDescription(IntPtr windowHandle)
         {
-            return new SharpDX.DXGI.SwapChainDescription
+            return new SwapChainDescription
             {
                 BufferCount = 1,
-                Flags = SharpDX.DXGI.SwapChainFlags.None,
+                Flags = SwapChainFlags.None,
                 IsWindowed = true,
-                ModeDescription = new SharpDX.DXGI.ModeDescription(100, 100, new Rational(60, 1), SharpDX.DXGI.Format.R8G8B8A8_UNorm),
+                ModeDescription = new ModeDescription(100, 100, new Rational(60, 1), Format.R8G8B8A8_UNorm),
                 OutputHandle = windowHandle,
-                SampleDescription = new SharpDX.DXGI.SampleDescription(1, 0),
-                SwapEffect = SharpDX.DXGI.SwapEffect.Discard,
-                Usage = SharpDX.DXGI.Usage.RenderTargetOutput
+                SampleDescription = new SampleDescription(1, 0),
+                SwapEffect = SwapEffect.Discard,
+                Usage = Usage.RenderTargetOutput
             };
         }
 
         public override void CreateHooks()
         {
             var renderForm = new SharpDX.Windows.RenderForm();
-            SharpDX.Direct3D11.Device.CreateWithSwapChain(
+            Device.CreateWithSwapChain(
                 DriverType.Hardware,
                 DeviceCreationFlags.BgraSupport,
                 CreateSwapChainDescription(renderForm.Handle),
@@ -72,26 +67,29 @@ namespace DirectX.Direct3D11.Overlay
                 Detour_Present,
                 this);
 
-            Overlays = new List<IOverlay>();
-            //var font = new System.Drawing.Font("Arial", 16, FontStyle.Bold);
-            // Add the Frames Per Second overlay
-            Overlays.Add(new Direct3D.Core.Drawing.Overlay
+            Overlays = new List<IOverlay>
             {
-                Elements =
+                //var font = new System.Drawing.Font("Arial", 16, FontStyle.Bold);
+                // Add the Frames Per Second overlay
+                new Direct3D.Core.Drawing.Overlay
                 {
-                    new FramesPerSecondOverlay(new System.Drawing.Font("Arial", 16, FontStyle.Bold))
+                    Elements =
                     {
-                        Location = new System.Drawing.Point(25, 25),
-                        Color = Color.Red,
-                        AntiAliased = true,
-                        Text = "{0:N0} FPS"
-                    }
-                },
-                Hidden = false
-            });
+                        new FramesPerSecondOverlay(new Font("Arial", 16, FontStyle.Bold))
+                        {
+                            Location = new Point(25, 25),
+                            Color = Color.Red,
+                            AntiAliased = true,
+                            Text = "{0:N0} FPS"
+                        }
+                    },
+                    Hidden = false
+                }
+            };
 
             _d3DPresentHook.Enabled = true;
         }
+
         private static IEnumerable<IntPtr> ReadVTableAddresses(IntPtr vTableAddress, int vTableFunctionCount)
         {
             IntPtr[] addresses = new IntPtr[vTableFunctionCount];
@@ -168,7 +166,7 @@ namespace DirectX.Direct3D11.Overlay
             }
             catch (Exception e)
             {
-
+                System.Diagnostics.Debug.WriteLine(e.ToString());
             }
         }
     }
