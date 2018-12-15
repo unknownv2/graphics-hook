@@ -26,15 +26,16 @@ namespace DirectX.Direct3D11.Overlay
         private List<IntPtr> _d3DDeviceFunctions = new List<IntPtr>();
         private OverlayRenderer _overlayRenderer;
 
-
         public const int DXGI_SWAPCHAIN_METHOD_COUNT = 18;
-        SharpDX.Direct3D11.Device _device;
+        Device _device;
         SwapChain _swapChain;
         private DXFont _framesPerSecondFont;
 
         private int _frameCount;
         private int _lastTickCount;
         private float _lastFrameRate;
+
+        private IntPtr _swapChainPtr;
 
         private static SharpDX.DXGI.SwapChainDescription CreateSwapChainDescription(IntPtr windowHandle)
         {
@@ -105,7 +106,6 @@ namespace DirectX.Direct3D11.Overlay
         private int Detour_Present(IntPtr swapChainPtr, int syncInterval, SharpDX.DXGI.PresentFlags flags)
         {
             SwapChain swapChain = (SwapChain)swapChainPtr;
-            _frameCount++;
 
             DrawFramesPerSecond(swapChain);
 
@@ -132,25 +132,30 @@ namespace DirectX.Direct3D11.Overlay
         private void Capture(SwapChain swapChain)
         {
             CalculateFps();
+            
             try
             {
                 // Draw overlays
                 var displayOverlays = Overlays;
+                
                 if (_overlayRenderer == null ||
-                    _overlayRenderer.Device.NativePointer != swapChain.NativePointer ||
+                    _swapChainPtr != swapChain.NativePointer ||
                     PendingUpdate)
                 {
+                    
                     if (_overlayRenderer != null)
                     {
-                        RemoveAndDispose(ref _overlayRenderer);
+                        _overlayRenderer.Dispose();
                     }
+
+                    _swapChainPtr = swapChain.NativePointer;
 
                     _overlayRenderer = ToDispose((new OverlayRenderer()));
                     _overlayRenderer.Overlays.AddRange(displayOverlays);
                     _overlayRenderer.Initialize(swapChain);
                     PendingUpdate = false;
                 }
-
+                
                 if (_overlayRenderer != null)
                 {
                     foreach (var overlay in _overlayRenderer.Overlays)

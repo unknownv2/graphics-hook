@@ -38,6 +38,7 @@ namespace DirectX.Direct3D11.Overlay
         {
             System.Diagnostics.Debug.Assert(_isInitialized);
         }
+
         internal bool Initialize(SharpDX.DXGI.SwapChain swapChain)
         {
             return Initialize(swapChain.GetDevice<Device>(), swapChain.GetBackBuffer<Texture2D>(0));
