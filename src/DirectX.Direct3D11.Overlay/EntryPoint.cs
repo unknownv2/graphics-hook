@@ -13,6 +13,10 @@ namespace DirectX.Direct3D11.Overlay
         {
             _direct3DHook = new Direct3DHookModule();
             _direct3DHook.CreateHooks();
+            while (true)
+            {
+                System.Threading.Thread.Sleep(30000);
+            }
         }
     }
 }
