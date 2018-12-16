@@ -5,6 +5,8 @@ namespace DirectX.Direct3D9.Overlay
 {
     public class EntryPoint : IEntryPoint
     {
+        private Direct3DHook _direct3DHook;
+
         public EntryPoint(IContext context) { }
 
         public void Run(IContext context)
@@ -15,8 +17,6 @@ namespace DirectX.Direct3D9.Overlay
                 System.Threading.Thread.Sleep(30000);
             }
         }
-
-        private Direct3DHook _direct3DHook;
 
         public void InitializeDeviceHook()
         {

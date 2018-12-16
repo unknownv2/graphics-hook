@@ -15,10 +15,6 @@ namespace DirectX.Direct3D9.Overlay
 {
     internal class Direct3DHookModule : Direct3DHook
     {
-        private OverlayRenderer _overlayRenderer;
-        private List<IntPtr> _d3DDeviceFunctions = new List<IntPtr>();
-        private const int D3DDevice9FunctionCount = 119;
-
         [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Unicode, SetLastError = true)]
         unsafe delegate int IDirect3DDevice9_PresentDelegate(IntPtr device, Rectangle* sourceRectangle,
             Rectangle* destRectangle, IntPtr destWindowOverride, IntPtr dirtyRegion);
@@ -31,15 +27,13 @@ namespace DirectX.Direct3D9.Overlay
 
         private IHook<IDirect3DDevice9_PresentDelegate> _d3DPresentHook;
         private IHook<IDirect3DDevice9_EndSceneDelegate> _d3DEndSceneHook;
-        private IHook<IDirect3DDevice9_ResetDelegate> _d3dResetHook;
+        private IHook<IDirect3DDevice9_ResetDelegate> _d3DResetHook;
 
-        private Font _framesPerSecondFont;
-
-        private int _frameCount;
-        private int _lastTickCount;
-        private float _lastFrameRate;
-
+        private OverlayRenderer _overlayRenderer;
+        private List<IntPtr> _d3DDeviceFunctions = new List<IntPtr>();
+        private const int D3DDevice9FunctionCount = 119;
         private bool _isUsingPresentHook = false;
+
         public override unsafe void CreateHooks()
         {
             _d3DDeviceFunctions = new List<IntPtr>();
@@ -65,33 +59,34 @@ namespace DirectX.Direct3D9.Overlay
                     Detour_Present,
                     this);
 
-            _d3dResetHook = HookFactory.CreateHook<IDirect3DDevice9_ResetDelegate>(
+            _d3DResetHook = HookFactory.CreateHook<IDirect3DDevice9_ResetDelegate>(
                 _d3DDeviceFunctions[(int)FunctionOrdinals.Reset],
                 Detour_Reset,
                 this);
 
-            Overlays = new List<IOverlay>();
-            //var font = new System.Drawing.Font("Arial", 16, FontStyle.Bold);
-            // Add the Frames Per Second overlay
-            Overlays.Add(new Direct3D.Core.Drawing.Overlay
+            // Add the Frames Per Second overlay.
+            Overlays = new List<IOverlay>
             {
-                Elements =
+                new Direct3D.Core.Drawing.Overlay
                 {
-                    new FramesPerSecondOverlay(new System.Drawing.Font("Arial", 16, FontStyle.Bold))
+                    Elements =
                     {
-                        Location = new System.Drawing.Point(25, 25),
-                        Color = Color.Red,
-                        AntiAliased = true,
-                        Text = "{0:N0} FPS"
-                    }
-                },
-                Hidden = false
-            });
+                        new FramesPerSecondOverlay(new System.Drawing.Font("Arial", 16, FontStyle.Bold))
+                        {
+                            Location = new System.Drawing.Point(25, 25),
+                            Color = Color.Red,
+                            AntiAliased = true,
+                            Text = "{0:N0} FPS"
+                        }
+                    },
+                    Hidden = false
+                }
+            };
 
             // Enable the hooks for all threads except the current thread.
             _d3DEndSceneHook.ThreadACL.SetExclusiveACL(new int[1]);
             _d3DPresentHook.ThreadACL.SetExclusiveACL(new int[1]);
-            _d3dResetHook.ThreadACL.SetExclusiveACL(new int[1]);
+            _d3DResetHook.ThreadACL.SetExclusiveACL(new int[1]);
         }
 
         private static IEnumerable<IntPtr> ReadVTableAddresses(IntPtr vTableAddress, int vTableFunctionCount)
@@ -138,7 +133,7 @@ namespace DirectX.Direct3D9.Overlay
         {
             _overlayRenderer?.ResetDeviceResources();
 
-            return _d3dResetHook.Original(direct3DDevice, ref parameters);
+            return _d3DResetHook.Original(direct3DDevice, ref parameters);
         }
 
         private void DrawFramesPerSecond(Device device)
@@ -146,25 +141,11 @@ namespace DirectX.Direct3D9.Overlay
             Capture(device);
         }
 
-        private void CalculateFps()
-        {
-            _frameCount++;
-            var tickCount = Environment.TickCount;
-            if (Math.Abs(tickCount - _lastTickCount) > 1000)
-            {
-                _lastFrameRate = (float)_frameCount * 1000 / Math.Abs(tickCount - _lastTickCount);
-                _frameCount = 0;
-                _lastTickCount = tickCount;
-            }
-        }
-
         private void Capture(Device device)
         {
-            CalculateFps();
-
             try
             {
-                // Draw overlays
+                // Draw any overlays that have been added to the global list.
                 var displayOverlays = Overlays;
                 if (_overlayRenderer == null ||
                     _overlayRenderer.Device.NativePointer != device.NativePointer ||
@@ -193,7 +174,7 @@ namespace DirectX.Direct3D9.Overlay
             }
             catch (Exception e)
             {
-
+                System.Diagnostics.Debug.WriteLine($"{e}");
             }
         }
 
