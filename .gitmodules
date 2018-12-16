@@ -1,0 +1,3 @@
+[submodule "deps/SharpDX.Desktop"]
+	path = deps/SharpDX.Desktop
+	url = git://github.com/unknownv2/SharpDX.Desktop.git
