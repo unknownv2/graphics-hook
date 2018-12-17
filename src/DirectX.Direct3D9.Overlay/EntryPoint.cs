@@ -1,22 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using CoreHook;
-using SharpDX;
-using SharpDX.Direct3D9;
+﻿using CoreHook;
+using DirectX.Direct3D.Core;
 
 namespace DirectX.Direct3D9.Overlay
 {
     public class EntryPoint : IEntryPoint
     {
-        private List<IntPtr> _d3DDeviceFunctions = new List<IntPtr>();
-        private const int D3DDevice9FunctionCount = 119;
-
-        private Font _framesPerSecondFont;
-
-        private int _frameCount;
-        private int _lastTickCount;
-        private float _lastFrameRate;
+        private Direct3DHook _direct3DHook;
 
         public EntryPoint(IContext context) { }
 
@@ -29,111 +18,10 @@ namespace DirectX.Direct3D9.Overlay
             }
         }
 
-        [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Unicode, SetLastError = true)]
-        unsafe delegate int IDirect3DDevice9_PresentDelegate(IntPtr device, Rectangle* sourceRectangle,
-            Rectangle* destRectangle, IntPtr destWindowOverride, IntPtr dirtyRegion);
-
-        [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Unicode, SetLastError = true)]
-        private delegate int IDirect3DDevice9_EndSceneDelegate(IntPtr device);
-
-        private IHook<IDirect3DDevice9_PresentDelegate> _d3DPresentHook;
-        private IHook<IDirect3DDevice9_EndSceneDelegate> _d3DEndSceneHook;
-
-        public unsafe void InitializeDeviceHook()
+        public void InitializeDeviceHook()
         {
-            _d3DDeviceFunctions = new List<IntPtr>();
-
-            using (var direct3D = new Direct3D())
-            {
-                using (var device = new Device(direct3D, 0, DeviceType.NullReference, IntPtr.Zero, 
-                    CreateFlags.HardwareVertexProcessing,
-                    new PresentParameters { BackBufferWidth = 1, BackBufferHeight = 1, DeviceWindowHandle = IntPtr.Zero }))
-                {
-                    _d3DDeviceFunctions.AddRange(ReadVTableAddresses(device.NativePointer, D3DDevice9FunctionCount));
-                }
-            }
-
-            _d3DEndSceneHook = HookFactory.CreateHook<IDirect3DDevice9_EndSceneDelegate>(
-                _d3DDeviceFunctions[(int)FunctionOrdinals.EndScene],
-                Detour_EndScene,
-                this);
-
-            _d3DPresentHook = HookFactory.CreateHook<IDirect3DDevice9_PresentDelegate>(
-                _d3DDeviceFunctions[(int)FunctionOrdinals.Present],
-                Detour_Present,
-                this);
-
-            _d3DEndSceneHook.ThreadACL.SetExclusiveACL(new int[1]);
-            _d3DPresentHook.ThreadACL.SetExclusiveACL(new int[1]);
-        }
-
-        private static IEnumerable<IntPtr> ReadVTableAddresses(IntPtr vTableAddress, int vTableFunctionCount)
-        {
-            IntPtr[] addresses = new IntPtr[vTableFunctionCount];
-            IntPtr vTable = Marshal.ReadIntPtr(vTableAddress);
-            for (var i = 0; i < vTableFunctionCount; ++i)
-            {
-                addresses[i] = Marshal.ReadIntPtr(vTable, i * IntPtr.Size);
-            }
-            return addresses;
-        }
-
-        private unsafe int Detour_Present(
-            IntPtr device,
-            Rectangle* sourceRectangle,
-            Rectangle* destRectangle,
-            IntPtr destWindowOverride,
-            IntPtr dirtyRegion)
-        {
-            _frameCount++;
-
-            return _d3DPresentHook.Original(device, sourceRectangle, destRectangle, destWindowOverride, dirtyRegion);
-        }
-
-        private int Detour_EndScene(IntPtr direct3DDevice)
-        {
-            Device device = (Device)direct3DDevice;
-
-            DrawFramesPerSecond(device);
-
-            device.EndScene();
-
-            return Result.Ok.Code;
-        }
-
-        private void DrawFramesPerSecond(Device device)
-        {
-            try
-            {
-                var tickCount = Environment.TickCount;
-                if (Math.Abs(tickCount - _lastTickCount) > 1000)
-                {
-                    _lastFrameRate = (float)_frameCount * 1000 / Math.Abs(tickCount - _lastTickCount);
-                    _frameCount = 0;
-                    _lastTickCount = tickCount;
-                }
-                if (_framesPerSecondFont == null)
-                {
-                    _framesPerSecondFont = new Font(device, new FontDescription
-                    {
-                        Height = 20,
-                        FaceName = "Arial",
-                        Italic = false,
-                        Width = 0,
-                        MipLevels = 1,
-                        CharacterSet = FontCharacterSet.Default,
-                        OutputPrecision = FontPrecision.Default,
-                        Quality = FontQuality.ClearTypeNatural,
-                        PitchAndFamily = FontPitchAndFamily.Default | FontPitchAndFamily.DontCare,
-                        Weight = FontWeight.Bold
-                    });
-                }
-
-                _framesPerSecondFont.DrawText(null, $"{_lastFrameRate:N0} FPS", 0, 0, new ColorBGRA(244, 66, 86, 255));
-            }
-            catch (Exception)
-            {
-            }
+            _direct3DHook = new Direct3DHookModule();
+            _direct3DHook.CreateHooks();
         }
     }
 }

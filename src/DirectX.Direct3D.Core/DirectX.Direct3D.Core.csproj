@@ -5,19 +5,16 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <OutputPath>$(OutputDir)</OutputPath>    
+    <OutputPath>$(OutputDir)</OutputPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <OutputPath>$(OutputDir)</OutputPath>    
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CoreHook" Version="1.0.3" />
-    <PackageReference Include="SharpDX.Direct3D9" Version="4.2.0" />
-    <PackageReference Include="SharpDX.Mathematics" Version="4.2.0" />
+    <PackageReference Include="SharpDX" Version="4.2.0" />
+    <PackageReference Include="System.Drawing.Common" Version="4.6.0-preview.18571.3" />
   </ItemGroup>
 
 </Project>
