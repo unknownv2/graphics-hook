@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
 using DirectX.Direct3D.Core;
 using CoreHook;
@@ -8,7 +9,7 @@ using DirectX.Direct3D.Core.Drawing;
 using SharpDX;
 using SharpDX.Direct3D9;
 using Color = System.Drawing.Color;
-using Font = SharpDX.Direct3D9.Font;
+using ImageFormat = DirectX.Direct3D.Core.ImageFormat;
 using Rectangle = SharpDX.Rectangle;
 
 namespace DirectX.Direct3D9.Overlay
@@ -133,6 +134,8 @@ namespace DirectX.Direct3D9.Overlay
         {
             _overlayRenderer?.ResetDeviceResources();
 
+            CleanupSurfaceResources();
+
             return _d3DResetHook.Original(direct3DDevice, ref parameters);
         }
 
@@ -141,10 +144,116 @@ namespace DirectX.Direct3D9.Overlay
             Capture(device);
         }
 
+        private Query _captureQuery;
+        private CaptureRequest _captureRequestCopy;
+        private bool _captureRequested;
+        private Surface _renderTargetSurface;
+        private bool _renderTargetSurfaceLocked;
+
+        private Surface _resolvingTargetSurface;
+        private readonly object _renderSurfaceLock = new object();
+
         private void Capture(Device device)
         {
             try
             {
+                // Check if the capture request for the render target has completed
+                if (_captureRequested && _captureRequestCopy != null &&
+                    _captureQuery.GetData(out bool _, false))
+                {
+                    _captureRequested = false;
+
+                    var lockedRectangle = LockSurfaceForCopy(_renderTargetSurface, out SharpDX.Rectangle rectangle);
+                    _renderTargetSurfaceLocked = true;
+
+                    System.Threading.Tasks.Task.Factory.StartNew(() =>
+                    {
+                        lock (_renderSurfaceLock)
+                        {
+                            CaptureSurfaceData(lockedRectangle.DataPointer, lockedRectangle.Pitch, rectangle.Width,
+                                rectangle.Height, _renderTargetSurface.Description.Format.ToPixelFormat(),
+                                _captureRequestCopy);
+                        }
+                    });
+                }
+
+                if (ScreenshotRequest.Request != null)
+                {
+                    try
+                    {
+                        var captureRequest = ScreenshotRequest.Request;
+                        using (Surface surfaceTarget = device.GetRenderTarget(0))
+                        {
+
+                            int width, height;
+
+                            if (captureRequest.RegionSize != null
+                                && (surfaceTarget.Description.Width > captureRequest.RegionSize.Value.Width
+                                    || surfaceTarget.Description.Height > captureRequest.RegionSize.Value.Height))
+                            {
+                                if (surfaceTarget.Description.Width > captureRequest.RegionSize.Value.Width)
+                                {
+                                    width = captureRequest.RegionSize.Value.Width;
+                                    height = (int) Math.Round(
+                                        (surfaceTarget.Description.Height *
+                                         ((double) captureRequest.RegionSize.Value.Width /
+                                          (double) surfaceTarget.Description.Width)));
+                                }
+                                else
+                                {
+                                    height = captureRequest.RegionSize.Value.Height;
+                                    width = (int) Math.Round((surfaceTarget.Description.Width *
+                                                              (double) captureRequest.RegionSize.Value.Height /
+                                                               (double) surfaceTarget.Description.Height));
+                                }
+                            }
+                            else
+                            {
+                                width = surfaceTarget.Description.Width;
+                                height = surfaceTarget.Description.Height;
+                            }
+
+                            if (_renderTargetSurface != null &&
+                                (_renderTargetSurface.Description.Width != width
+                                 || _renderTargetSurface.Description.Height != height
+                                 || _renderTargetSurface.Description.Format != surfaceTarget.Description.Format))
+                            {
+                                CleanupSurfaceResources();
+                            }
+
+                            if (!_captureResourcesInitialized || _renderTargetSurface == null)
+                            {
+                                InitializeCaptureResources(device, surfaceTarget.Description.Format, width, height);
+                            }
+
+                            device.StretchRectangle(surfaceTarget, _resolvingTargetSurface, TextureFilter.None);
+                        }
+
+                        if (_renderTargetSurfaceLocked)
+                        {
+                            lock (_renderSurfaceLock)
+                            {
+                                if (_renderTargetSurfaceLocked)
+                                {
+                                    _renderTargetSurface.UnlockRectangle();
+                                    _renderTargetSurfaceLocked = false;
+                                }
+                            }
+                        }
+
+                         device.GetRenderTargetData(_resolvingTargetSurface, _renderTargetSurface);
+
+                        _captureRequestCopy = ScreenshotRequest.Request.Clone();
+                        _captureQuery.Issue(Issue.End);
+                        _captureRequested = true;
+                    }
+                    finally
+                    {
+                        // Mark the request as null so it is not processed again
+                        ScreenshotRequest.Request = null;
+                    }
+                }
+
                 // Draw any overlays that have been added to the global list.
                 var displayOverlays = Overlays;
                 if (_overlayRenderer == null ||
@@ -159,6 +268,7 @@ namespace DirectX.Direct3D9.Overlay
                     _overlayRenderer = ToDispose((new OverlayRenderer()));
                     _overlayRenderer.Overlays.AddRange(displayOverlays);
                     _overlayRenderer.Initialize(device);
+
                     PendingUpdate = false;
                 }
 
@@ -178,5 +288,57 @@ namespace DirectX.Direct3D9.Overlay
             }
         }
 
+        private SharpDX.DataRectangle LockSurfaceForCopy(Surface surface, out SharpDX.Rectangle rectangle)
+        {
+            if (_captureRequestCopy.Region.Height > 0 && _captureRequestCopy.Region.Width > 0)
+            {
+                rectangle = new Rectangle(_captureRequestCopy.Region.Left, _captureRequestCopy.Region.Top,
+                    _captureRequestCopy.Region.Width, _captureRequestCopy.Region.Height);
+            }
+            else
+            {
+                rectangle = new SharpDX.Rectangle(0, 0, surface.Description.Width, surface.Description.Height);
+            }
+
+            return surface.LockRectangle(rectangle, LockFlags.ReadOnly);
+        }
+
+        private bool _captureResourcesInitialized;
+
+        private void InitializeCaptureResources(Device device, Format dataFormat, int width, int height)
+        {
+            if (!_captureResourcesInitialized)
+            {
+                _captureResourcesInitialized = true;
+
+                _renderTargetSurface =
+                    ToDispose(Surface.CreateOffscreenPlain(device, width, height, dataFormat, Pool.SystemMemory));
+
+                _resolvingTargetSurface = ToDispose(Surface.CreateRenderTarget(device, width, height, dataFormat,
+                    MultisampleType.None, 0, false));
+
+                _captureQuery = ToDispose(new Query(device, QueryType.Event));
+            }
+        }
+
+
+
+        private void CleanupSurfaceResources()
+        {
+            lock (_renderSurfaceLock)
+            {
+                _captureResourcesInitialized = false;
+
+                RemoveAndDispose(ref _renderTargetSurface);
+                _renderTargetSurfaceLocked = false;
+
+                RemoveAndDispose(ref _resolvingTargetSurface);
+                RemoveAndDispose(ref _captureQuery);
+
+                _captureRequested = false;
+
+                RemoveAndDispose(ref _overlayRenderer);
+            }
+        }
     }
 }
