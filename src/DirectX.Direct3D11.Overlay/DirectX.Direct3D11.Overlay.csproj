@@ -20,8 +20,17 @@
 
   <ItemGroup>
     <PackageReference Include="CoreHook" Version="1.0.3" />
+    <PackageReference Include="CoreHook.IPC" Version="1.0.1" />
+    <PackageReference Include="CXuesong.JsonRpc.AspNetCore" Version="0.4.1" />
+    <PackageReference Include="CXuesong.JsonRpc.Streams" Version="0.4.2" />
+    <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.6.0-beta2" />
+    <PackageReference Include="Microsoft.AspNetCore" Version="2.2.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc" Version="2.2.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Session" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="3.0.0-preview.18572.1" />
     <PackageReference Include="Microsoft.WindowsDesktop.App" Version="3.0.0-alpha-27128-4" />
     <PackageReference Include="SharpDX.D3DCompiler" Version="4.2.0" />
+    <PackageReference Include="SharpDX.Direct2D1" Version="4.2.0" />
     <PackageReference Include="SharpDX.Direct3D11" Version="4.2.0" />
     <PackageReference Include="SharpDX.Direct3D11.Effects" Version="4.2.0" />
     <PackageReference Include="SharpDX.Mathematics" Version="4.2.0" />
@@ -30,7 +39,14 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\deps\SharpDX.Desktop\SharpDX.Desktop\SharpDX.Desktop.csproj" />
+    <ProjectReference Include="..\Direct3DCapture\Direct3DCapture.csproj" />
     <ProjectReference Include="..\DirectX.Direct3D.Core\DirectX.Direct3D.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="JsonRpc.Http">
+      <HintPath>..\..\..\JsonRpc.Standard\JsonRpc.Http\bin\Debug\netstandard1.1\JsonRpc.Http.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
 </Project>

@@ -6,6 +6,8 @@ using JsonRpc.Standard.Server;
 using System.Threading;
 using System.Threading.Tasks;
 using Direct3DCapture;
+using System;
+
 namespace DirectX.Direct3D11.Overlay
 {
     public class EntryPoint : IEntryPoint
@@ -17,17 +19,28 @@ namespace DirectX.Direct3D11.Overlay
 
         public void Run(IContext context, string pipeName)
         {
-            _pipeName = pipeName;
-
-            InitializeDeviceHook();
-            while (true)
+            try
             {
-                System.Threading.Thread.Sleep(30000);
+                _pipeName = pipeName;
+
+                
+                InitializeDeviceHook();
+                InitAspServer();
+                while (true)
+                {
+                    System.Threading.Thread.Sleep(30000);
+                }
+            }
+            catch(Exception e)
+            {
+                System.Diagnostics.Debug.WriteLine($"{e}");
             }
         }
 
+        private ScreenshotAspServer _server;
         private void InitializeDeviceHook()
         {
+          
             _direct3DHook = new Direct3DHookModule();
 
             ScreenshotServer.CreateRpcService(
@@ -43,6 +56,10 @@ namespace DirectX.Direct3D11.Overlay
                 _direct3DHook);
 
             _direct3DHook.CreateHooks();
+        }
+        private void InitAspServer()
+        {
+            _server = new ScreenshotAspServer();
         }
     }
     public class ScreenCaptureService : JsonRpcService
