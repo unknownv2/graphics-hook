@@ -28,21 +28,7 @@ namespace DirectX.Direct3D11.Overlay
             _cts.Cancel();
         }
     }
-    public class PipePlatform : IPipePlatform
-    {
-        public NamedPipeServerStream CreatePipeByName(string pipeName, string serverName)
-        {
-            return new NamedPipeServerStream(
-                pipeName,
-                PipeDirection.InOut,
-                1,
-                PipeTransmissionMode.Byte,
-                PipeOptions.Asynchronous,
-                65536,
-                65536
-            );
-        }
-    }
+
     internal class ScreenshotServer
     {
         private readonly Type _service;
