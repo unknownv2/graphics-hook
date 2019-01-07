@@ -16,11 +16,13 @@
 
   <ItemGroup>
     <PackageReference Include="CoreHook" Version="1.0.3" />
+    <PackageReference Include="CXuesong.JsonRpc.Streams" Version="0.4.2" />
     <PackageReference Include="SharpDX.Direct3D9" Version="4.2.0" />
     <PackageReference Include="SharpDX.Mathematics" Version="4.2.0" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Direct3DCapture\Direct3DCapture.csproj" />
     <ProjectReference Include="..\DirectX.Direct3D.Core\DirectX.Direct3D.Core.csproj" />
   </ItemGroup>
 
